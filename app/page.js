@@ -2,17 +2,33 @@
 
 import { useState } from "react";
 
+function Spinner() {
+  return (
+    <div className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  );
+}
+
 export default function Home() {
   const [rssUrl, setRssUrl] = useState("");
   const [status, setStatus] = useState("");
   const [fileUrl, setFileUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [inputError, setInputError] = useState(false); // NEW
 
   const handleSubmit = async () => {
     if (!rssUrl) {
       setStatus("Please enter a valid RSS feed URL.");
+      setInputError(true); // NEW: trigger red border
+    
+      // Auto-clear after 10 seconds
+      setTimeout(() => {
+        setInputError(false);
+      }, 10000);
+    
       return;
     }
 
+    setLoading(true);   // NEW
     setStatus("Processing...");
 
     try {
@@ -26,14 +42,31 @@ export default function Home() {
       console.log("Backend response:", data);
       
       if (response.ok) {
-        setFileUrl(data.file || null); // this sets the download link if it exists
+        setFileUrl(data.file || null);
         setStatus("✅ Transcript ready!");
+        
+        // NEW: Clear status after 10 seconds
+        setTimeout(() => {
+          setStatus("");
+        }, 10000); // 10,000ms = 10 seconds
       } else {
         setFileUrl(null);
         setStatus(`❌ Error: ${data.error || "Something went wrong"}`);
+        setInputError(true);
+        const timeout = setTimeout(() => {
+          setInputError(false);
+          setStatus("");
+        }, 10000);
       }
     } catch (err) {
       setStatus("❌ Network error. Please try again.");
+      setInputError(true);
+      const timeout = setTimeout(() => {
+        setInputError(false);
+        setStatus("");
+      }, 10000);
+    } finally {
+      setLoading(false); // NEW
     }
   };
 
@@ -50,14 +83,25 @@ export default function Home() {
           placeholder="Enter podcast RSS feed URL"
           value={rssUrl}
           onChange={(e) => setRssUrl(e.target.value)}
-          className="w-full p-3 rounded-lg border border-gray-300 mb-4 shadow-sm"
+          className={`w-full p-3 rounded-lg mb-4 shadow-sm transition ${
+            inputError
+              ? "border-red-500"
+              : "border-gray-300"
+          }`}
+          style={{ borderWidth: "1px" }}
         />
 
         <button
           onClick={handleSubmit}
-          className="bg-black text-white px-6 py-3 rounded-lg text-lg hover:bg-gray-800"
-        >
-          ▶️ Transcribe Latest
+          disabled={loading}
+          className={`px-6 py-3 rounded-lg text-lg shadow-sm flex items-center justify-center gap-2 transition ${
+            loading
+              ? "bg-gray-400 text-white cursor-not-allowed"
+              : "bg-black text-white hover:bg-gray-800"
+          }`}>
+        {loading 
+          ? <><Spinner /> Transcribing...</> 
+          : <>▶️ Transcribe Latest</>}
         </button>
 
         <p className="text-sm text-gray-400 mt-4">{status}</p>
