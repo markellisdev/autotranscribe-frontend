@@ -1,5 +1,12 @@
 # AutoTranscribe Frontend
 
+[![Next.js](https://img.shields.io/badge/Next.js-15-blue)](https://nextjs.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-blueviolet)](https://tailwindcss.com/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com/)
+[![Built with ❤️](https://img.shields.io/badge/Built_with-❤️-ff69b4)](https://markellis.dev)
+
+---
+
 This is the minimal frontend for AutoTranscribe:  
 a simple service for turning podcast RSS feeds into clean AI-generated transcripts.
 
