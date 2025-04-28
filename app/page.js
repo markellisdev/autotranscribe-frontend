@@ -44,27 +44,21 @@ export default function Home() {
       if (response.ok) {
         setFileUrl(data.file || null);
         setStatus("✅ Transcript ready!");
-        
-        // NEW: Clear status after 10 seconds
+      
+        // Clear success status after 10s
         setTimeout(() => {
           setStatus("");
-        }, 10000); // 10,000ms = 10 seconds
+        }, 10000);
+      
       } else {
         setFileUrl(null);
         setStatus(`❌ Error: ${data.error || "Something went wrong"}`);
-        setInputError(true);
-        const timeout = setTimeout(() => {
-          setInputError(false);
-          setStatus("");
-        }, 10000);
+      
+        // ❗ DO NOT clear error — keep it visible
       }
     } catch (err) {
       setStatus("❌ Network error. Please try again.");
-      setInputError(true);
-      const timeout = setTimeout(() => {
-        setInputError(false);
-        setStatus("");
-      }, 10000);
+      // ❗ Again: do NOT auto-clear
     } finally {
       setLoading(false); // NEW
     }
