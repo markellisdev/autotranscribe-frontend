@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // Import useRouter
 
 function Spinner() {
   return (
@@ -13,22 +14,41 @@ export default function Home() {
   const [status, setStatus] = useState("");
   const [fileUrl, setFileUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [inputError, setInputError] = useState(false); // NEW
+  const [inputError, setInputError] = useState(false);
+  const router = useRouter(); // Initialize useRouter
+
+  const handleLogout = async () => {
+    // Call an API route to clear the cookie
+    const response = await fetch('/api/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      // Redirect the user to the login page after successful logout
+      router.push('/login');
+    } else {
+      console.error("Logout failed");
+      setStatus("Logout failed. Please try again.");
+    }
+  };
 
   const handleSubmit = async () => {
     if (!rssUrl) {
       setStatus("Please enter a valid RSS feed URL.");
       setInputError(true); // NEW: trigger red border
-    
+
       // Auto-clear after 10 seconds
       setTimeout(() => {
         setInputError(false);
       }, 10000);
-    
+
       return;
     }
 
-    setLoading(true);   // NEW
+    setLoading(true);    // NEW
     setStatus("Processing...");
 
     try {
@@ -40,20 +60,20 @@ export default function Home() {
 
       const data = await response.json();
       console.log("Backend response:", data);
-      
+
       if (response.ok) {
         setFileUrl(data.file || null);
         setStatus("✅ Transcript ready!");
-      
+
         // Clear success status after 10s
         setTimeout(() => {
           setStatus("");
         }, 10000);
-      
+
       } else {
         setFileUrl(null);
         setStatus(`❌ Error: ${data.error || "Something went wrong"}`);
-      
+
         // ❗ DO NOT clear error — keep it visible
       }
     } catch (err) {
@@ -66,7 +86,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-2xl text-center">
+      <div className="w-full max-w-2xl text-center flex flex-col items-center"> {/* Added flex and items-center */}
         <h1 className="text-4xl font-bold mb-4">🎙️ AutoTranscribe</h1>
         <p className="text-lg text-gray-600 mb-6">
           Paste your podcast RSS feed. Get back a clean AI transcript.
@@ -91,11 +111,12 @@ export default function Home() {
           className={`px-6 py-3 rounded-lg text-lg shadow-sm flex items-center justify-center gap-2 transition ${
             loading
               ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-black text-white hover:bg-gray-800"
-          }`}>
-        {loading 
-          ? <><Spinner /> Transcribing...</> 
-          : <>▶️ Transcribe Latest</>}
+              : "bg-blue-500 text-white hover:bg-blue-700"
+          }`}
+        >
+          {loading
+            ? <><Spinner /> Transcribing...</>
+            : <>▶️ Transcribe Latest</>}
         </button>
 
         <p className="text-sm text-gray-400 mt-4">{status}</p>
@@ -117,6 +138,9 @@ export default function Home() {
             <li>Download TXT or view HTML</li>
             <li>ADHD-friendly, creator-tested</li>
           </ul>
+          <button onClick={handleLogout} className="mt-4 px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-gray-400">
+            Logout
+          </button>
         </div>
 
         <div className="mt-10">
