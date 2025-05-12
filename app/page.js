@@ -87,7 +87,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-2xl text-center flex flex-col items-center"> {/* Added flex and items-center */}
-        <h1 className="text-4xl font-bold mb-4">🎙️ AutoTranscribe</h1>
+        <h1 className="text-4xl font-bold mb-4 text-neutralDarkest">🎙️ AutoTranscribe</h1>
         <p className="text-lg text-gray-600 mb-6">
           Paste your podcast RSS feed. Get back a clean AI transcript.
         </p>
@@ -111,7 +111,7 @@ export default function Home() {
           className={`px-6 py-3 rounded-lg text-lg shadow-sm flex items-center justify-center gap-2 transition ${
             loading
               ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-700"
+              : "bg-primary text-white hover:bg-secondary"
           }`}
         >
           {loading
@@ -146,7 +146,7 @@ export default function Home() {
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2">💰 Pricing</h2>
           <p className="text-gray-700">
-            1 transcript free. $3/month for unlimited personal use.
+            1 transcript free. $3/month for 10 hours worth of transcripts.
           </p>
           <p className="text-xs text-gray-500 mt-1">
             Fair use policy applies. Be cool 😎
