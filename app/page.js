@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -19,6 +19,15 @@ export default function Home() {
   const [inputError, setInputError] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Check if we have auth parameters in the URL hash
+    const hash = window.location.hash;
+    if (hash) {
+      // Redirect to the callback page with the hash
+      router.push(`/auth/callback${hash}`);
+    }
+  }, [router]);
 
   const validateEmail = (email) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
