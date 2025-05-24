@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 function Spinner() {
   return (
@@ -11,14 +12,25 @@ function Spinner() {
 
 export default function Home() {
   const [rssUrl, setRssUrl] = useState("");
+  const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
   const [fileUrl, setFileUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [inputError, setInputError] = useState(false);
-  const router = useRouter(); // Initialize useRouter
+  const [emailError, setEmailError] = useState(false);
+  const router = useRouter();
+
+  const validateEmail = (email) => {
+    return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  };
+
+  const handleEmailChange = (e) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+    setEmailError(newEmail !== "" && !validateEmail(newEmail));
+  };
 
   const handleLogout = async () => {
-    // Call an API route to clear the cookie
     const response = await fetch('/api/logout', {
       method: 'POST',
       headers: {
@@ -27,7 +39,6 @@ export default function Home() {
     });
 
     if (response.ok) {
-      // Redirect the user to the login page after successful logout
       router.push('/login');
     } else {
       console.error("Logout failed");
@@ -36,79 +47,112 @@ export default function Home() {
   };
 
   const handleSubmit = async () => {
-    if (!rssUrl) {
-      setStatus("Please enter a valid RSS feed URL.");
-      setInputError(true); // NEW: trigger red border
-
-      // Auto-clear after 10 seconds
-      setTimeout(() => {
-        setInputError(false);
-      }, 10000);
-
+    if (!email) {
+      setEmailError(true);
+      setStatus("Email is required");
+      return;
+    }
+    
+    if (!validateEmail(email)) {
+      setEmailError(true);
+      setStatus("Please enter a valid email address");
       return;
     }
 
-    setLoading(true);    // NEW
-    setStatus("Processing...");
+    if (!rssUrl) {
+      setInputError(true);
+      setStatus("Please enter an RSS feed URL");
+      return;
+    }
+
+    setLoading(true);
+    setStatus("Processing your request...");
 
     try {
-      const response = await fetch("/api/transcribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rss: rssUrl }),
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rssUrl, email }),
       });
 
-      const data = await response.json();
-      console.log("Backend response:", data);
-
-      if (response.ok) {
-        setFileUrl(data.file || null);
-        setStatus("✅ Transcript ready!");
-
-        // Clear success status after 10s
-        setTimeout(() => {
-          setStatus("");
-        }, 10000);
-
-      } else {
-        setFileUrl(null);
-        setStatus(`❌ Error: ${data.error || "Something went wrong"}`);
-
-        // ❗ DO NOT clear error — keep it visible
+      if (!response.ok) {
+        throw new Error('Transcription failed');
       }
-    } catch (err) {
-      setStatus("❌ Network error. Please try again.");
-      // ❗ Again: do NOT auto-clear
+
+      const data = await response.json();
+      setFileUrl(data.fileUrl);
+      setStatus("Transcription complete! Check your email for the transcript.");
+    } catch (error) {
+      setStatus("Error: " + error.message);
     } finally {
-      setLoading(false); // NEW
+      setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-2xl text-center flex flex-col items-center"> {/* Added flex and items-center */}
+    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-6 relative">
+      <div className="absolute top-4 right-4 flex gap-4">
+        <Link href="/pricing" className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">
+          View Plans
+        </Link>
+        <button onClick={handleLogout} className="px-4 py-2 rounded-md bg-accent text-white hover:bg-gray-400 text-sm">
+          Logout
+        </button>
+      </div>
+      <div className="w-full max-w-2xl text-center flex flex-col items-center">
         <h1 className="text-4xl font-bold mb-4 text-neutralDarkest">🎙️ AutoTranscribe</h1>
         <p className="text-lg text-gray-600 mb-6">
-          Paste your podcast RSS feed. Get back a clean AI transcript.
+          Get your first podcast transcript for free. Just paste your RSS feed below.
         </p>
 
-        <input
-          type="text"
-          placeholder="Enter podcast RSS feed URL"
-          value={rssUrl}
-          onChange={(e) => setRssUrl(e.target.value)}
-          className={`w-full p-3 rounded-lg mb-4 shadow-sm transition ${
-            inputError
-              ? "border-red-500"
-              : "border-gray-300"
-          }`}
-          style={{ borderWidth: "1px" }}
-        />
+        <div className="w-full space-y-4">
+          <div>
+            <input
+              type="text"
+              placeholder="Enter podcast RSS feed URL"
+              value={rssUrl}
+              onChange={(e) => setRssUrl(e.target.value)}
+              className={`w-full p-3 rounded-lg shadow-sm transition ${
+                inputError
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+              style={{ borderWidth: "1px" }}
+            />
+            {inputError && (
+              <p className="text-red-500 text-sm mt-1 text-left">Please enter an RSS feed URL</p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="email"
+              placeholder="Enter your email address (required)"
+              value={email}
+              onChange={handleEmailChange}
+              required
+              className={`w-full p-3 rounded-lg shadow-sm transition ${
+                emailError
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+              style={{ borderWidth: "1px" }}
+            />
+            {emailError && (
+              <p className="text-red-500 text-sm mt-1 text-left">Please enter a valid email address</p>
+            )}
+            <p className="text-sm text-gray-500 mt-1 text-left">
+              Get one free transcript per month. <Link href="/pricing" className="text-primary hover:text-secondary">View plans</Link> for more.
+            </p>
+          </div>
+        </div>
 
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className={`px-6 py-3 rounded-lg text-lg shadow-sm flex items-center justify-center gap-2 transition ${
+          className={`mt-4 px-6 py-3 rounded-lg text-lg shadow-sm flex items-center justify-center gap-2 transition ${
             loading
               ? "bg-gray-400 text-white cursor-not-allowed"
               : "bg-primary text-white hover:bg-secondary"
@@ -116,7 +160,7 @@ export default function Home() {
         >
           {loading
             ? <><Spinner /> Transcribing...</>
-            : <>▶️ Transcribe Latest</>}
+            : <>▶️ Get Transcript</>}
         </button>
 
         <p className="text-sm text-gray-400 mt-4">{status}</p>
@@ -138,19 +182,6 @@ export default function Home() {
             <li>Download TXT or view HTML</li>
             <li>ADHD-friendly, creator-tested</li>
           </ul>
-          <button onClick={handleLogout} className="mt-4 px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-gray-400">
-            Logout
-          </button>
-        </div>
-
-        <div className="mt-10">
-          <h2 className="text-xl font-semibold mb-2">💰 Pricing</h2>
-          <p className="text-gray-700">
-            1 transcript free. $3/month for 10 hours worth of transcripts.
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Fair use policy applies. Be cool 😎
-          </p>
         </div>
 
         <footer className="mt-10 text-sm text-gray-400">
