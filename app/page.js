@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 
 function Spinner() {
@@ -18,16 +17,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [inputError, setInputError] = useState(false);
   const [emailError, setEmailError] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    // Check if we have auth parameters in the URL hash
-    const hash = window.location.hash;
-    if (hash) {
-      // Redirect to the callback page with the hash
-      router.push(`/auth/callback${hash}`);
-    }
-  }, [router]);
 
   const validateEmail = (email) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -37,22 +26,6 @@ export default function Home() {
     const newEmail = e.target.value;
     setEmail(newEmail);
     setEmailError(newEmail !== "" && !validateEmail(newEmail));
-  };
-
-  const handleLogout = async () => {
-    const response = await fetch('/api/logout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      router.push('/login');
-    } else {
-      console.error("Logout failed");
-      setStatus("Logout failed. Please try again.");
-    }
   };
 
   const handleSubmit = async () => {
@@ -78,7 +51,7 @@ export default function Home() {
     setStatus("Processing your request...");
 
     try {
-      const response = await fetch('/api/transcribe', {
+      const response = await fetch('/api/transcribe-public', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,12 +60,11 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Transcription failed');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Transcription failed');
       }
 
-      const data = await response.json();
-      setFileUrl(data.fileUrl);
-      setStatus("Transcription complete! Check your email for the transcript.");
+      setStatus("Transcription request received. Check your email for the transcript!");
     } catch (error) {
       setStatus("Error: " + error.message);
     } finally {
@@ -101,19 +73,11 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-6 relative">
-      <div className="absolute top-4 right-4 flex gap-4">
-        <Link href="/pricing" className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">
-          View Plans
-        </Link>
-        <button onClick={handleLogout} className="px-4 py-2 rounded-md bg-accent text-white hover:bg-gray-400 text-sm">
-          Logout
-        </button>
-      </div>
-      <div className="w-full max-w-2xl text-center flex flex-col items-center">
+    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-md text-center flex flex-col items-center">
         <h1 className="text-4xl font-bold mb-4 text-neutralDarkest">🎙️ AutoTranscribe</h1>
         <p className="text-lg text-gray-600 mb-6">
-          Get your first podcast transcript for free. Just paste your RSS feed below.
+          Paste your podcast RSS feed. Get back a clean AI transcript.
         </p>
 
         <div className="w-full space-y-4">
@@ -161,7 +125,7 @@ export default function Home() {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className={`mt-4 px-6 py-3 rounded-lg text-lg shadow-sm flex items-center justify-center gap-2 transition ${
+          className={`mt-6 px-6 py-3 rounded-lg text-lg shadow-sm flex items-center justify-center gap-2 transition ${
             loading
               ? "bg-gray-400 text-white cursor-not-allowed"
               : "bg-primary text-white hover:bg-secondary"
@@ -169,28 +133,29 @@ export default function Home() {
         >
           {loading
             ? <><Spinner /> Transcribing...</>
-            : <>▶️ Get Transcript</>}
+            : <>▶️ Transcribe Latest</>}
         </button>
 
         <p className="text-sm text-gray-400 mt-4">{status}</p>
-        {fileUrl && (
-          <a
-            href={fileUrl}
-            download
-            className="text-blue-600 underline mt-2 inline-block"
-          >
-            ⬇️ Download Transcript
-          </a>
-        )}
 
-        <div className="mt-10 text-left">
+        <div className="mt-10 text-left w-full">
           <h2 className="text-xl font-semibold mb-2">✅ Features</h2>
-          <ul className="list-disc list-inside text-gray-700">
+          <ul className="list-disc list-inside text-gray-700 space-y-1">
             <li>Powered by OpenAI Whisper</li>
             <li>Fast & Accurate</li>
             <li>Download TXT or view HTML</li>
             <li>ADHD-friendly, creator-tested</li>
           </ul>
+        </div>
+
+        <div className="mt-8 text-center w-full">
+            <h2 className="text-xl font-semibold mb-2">💰 Pricing</h2>
+            <p className="text-gray-700">
+                1 transcript free. $3/month for unlimited personal use.
+            </p>
+             <p className="text-sm text-gray-500 mt-1">
+                Fair use policy applies. Be cool 😎
+            </p>
         </div>
 
         <footer className="mt-10 text-sm text-gray-400">

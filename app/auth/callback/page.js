@@ -1,91 +1,62 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AuthCallback() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Get the hash parameters from the URL
     const hash = window.location.hash;
-    console.log('Full URL hash:', hash);
-    
-    if (hash) {
-      // Parse the hash parameters
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      const type = params.get('type');
-
-      console.log('Parsed auth parameters:', {
-        accessToken: accessToken ? 'present' : 'missing',
-        refreshToken: refreshToken ? 'present' : 'missing',
-        type: type
-      });
-
-      if (accessToken && type === 'magiclink') {
-        console.log('Storing tokens in localStorage...');
-        // Store the tokens
-        localStorage.setItem('accessToken', accessToken);
-        if (refreshToken) {
-          localStorage.setItem('refreshToken', refreshToken);
-        }
-
-        console.log('Verifying token with backend...');
-        // Get user info to verify the token
-        const headers = {
-          'Authorization': `Bearer ${accessToken}`,
-        };
-        console.log('Request headers:', headers);
-        
-        fetch('http://localhost:8000/api/me', {
-          method: 'GET',
-          headers: headers,
-          credentials: 'include',
-        })
-        .then(async response => {
-          console.log('Backend response status:', response.status);
-          const responseText = await response.text();
-          console.log('Backend response text:', responseText);
-          
-          if (!response.ok) {
-            throw new Error(`Failed to verify token: ${response.status} ${response.statusText}\nResponse: ${responseText}`);
-          }
-          
-          try {
-            const userData = JSON.parse(responseText);
-            console.log('User data received:', userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-            console.log('Redirecting to dashboard...');
-            router.push('/dashboard');
-          } catch (e) {
-            throw new Error(`Failed to parse response: ${responseText}`);
-          }
-        })
-        .catch(err => {
-          console.error('Auth verification failed:', err);
-          // Clear the hash to prevent infinite loop
-          window.location.hash = '';
-          router.push('/login?error=auth_failed');
-        });
-      } else {
-        console.error('Invalid auth parameters:', { accessToken: !!accessToken, type });
-        router.push('/login?error=invalid_params');
-      }
-    } else {
-      console.error('No hash parameters found in URL');
-      router.push('/login?error=no_params');
+    if (!hash) {
+      setError('No authentication information found.');
+      return;
     }
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get('access_token');
+    if (!accessToken) {
+      setError('No access token found in callback.');
+      return;
+    }
+
+    fetch('http://localhost:8000/api/auth/callback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ access_token: accessToken }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.detail || 'Authentication failed');
+        }
+        router.push('/dashboard');
+      })
+      .catch((err) => {
+        setError(err.message || 'Authentication failed');
+        setTimeout(() => router.push('/login'), 3000);
+      });
   }, [router]);
 
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Authentication Error</h1>
+          <p className="text-gray-600">{error}</p>
+          <p className="text-gray-500 mt-2">Redirecting to login page...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="text-center">
-        <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <h1 className="text-xl font-semibold text-gray-900">Completing sign in...</h1>
-        <p className="text-gray-600 mt-2">Please wait while we set up your account.</p>
+        <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Completing Authentication</h1>
+        <p className="text-gray-600">Please wait while we log you in...</p>
       </div>
     </div>
   );

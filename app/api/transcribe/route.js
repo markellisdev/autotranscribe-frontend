@@ -1,11 +1,17 @@
 export async function POST(req) {
     const { rss } = await req.json();
+    const authHeader = req.headers.get("authorization");
+  
+    if (!authHeader) {
+      return Response.json({ error: "Authentication required" }, { status: 401 });
+    }
   
     try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/transcribe`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": authHeader,
         },
         body: JSON.stringify({ rss }),
       });
