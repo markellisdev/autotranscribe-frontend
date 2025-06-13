@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useUser, SignOutButton } from '@clerk/nextjs';
 
 function Spinner() {
   return (
@@ -20,6 +21,8 @@ export default function Home() {
   const [emailError, setEmailError] = useState(false);
   const router = useRouter();
 
+  const { isSignedIn, user } = useUser();
+
   const validateEmail = (email) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
   };
@@ -28,22 +31,6 @@ export default function Home() {
     const newEmail = e.target.value;
     setEmail(newEmail);
     setEmailError(newEmail !== "" && !validateEmail(newEmail));
-  };
-
-  const handleLogout = async () => {
-    const response = await fetch('/api/logout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      router.push('/login');
-    } else {
-      console.error("Logout failed");
-      setStatus("Logout failed. Please try again.");
-    }
   };
 
   const handleSubmit = async () => {
@@ -97,9 +84,11 @@ export default function Home() {
         <Link href="/pricing" className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">
           View Plans
         </Link>
-        <button onClick={handleLogout} className="px-4 py-2 rounded-md bg-accent text-white hover:bg-gray-400 text-sm">
-          Logout
-        </button>
+        <SignOutButton>
+          <button className="px-4 py-2 rounded-md bg-accent text-white hover:bg-gray-400 text-sm">
+            Logout
+          </button>
+        </SignOutButton>
       </div>
       <div className="w-full max-w-2xl text-center flex flex-col items-center">
         <h1 className="text-4xl font-bold mb-4 text-neutralDarkest">🎙️ AutoTranscribe</h1>

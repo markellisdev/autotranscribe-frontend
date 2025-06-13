@@ -1,4 +1,5 @@
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata = {
   title: "AutoTranscribe",
@@ -7,14 +8,13 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        {/* Link to Geist font from a CDN */}
-        <link href="https://fonts.cdnfonts.com/css/geist" rel="stylesheet" />
-      </head>
-      <body className="font-sans antialiased">
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <head>
+          <link href="https://fonts.cdnfonts.com/css/geist" rel="stylesheet" />
+        </head>
+        <body className="font-sans antialiased">{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }
