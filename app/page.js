@@ -23,8 +23,16 @@ export default function Home() {
 
   const { isSignedIn, user } = useUser();
 
+  const SHOW_DEBUG = process.env.NODE_ENV !== 'production';
+
   const validateEmail = (email) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  };
+
+  const getSafeEmail = () => {
+    if (!isSignedIn || !user) return email;
+    const emailObj = user?.primaryEmailAddress;
+    return typeof emailObj?.emailAddress === "string" ? emailObj.emailAddress : "";
   };
 
   const handleEmailChange = (e) => {
@@ -56,12 +64,22 @@ export default function Home() {
     setStatus("Processing your request...");
 
     try {
+      const emailObj = user?.primaryEmailAddress;
+      const safeEmail = isSignedIn && typeof emailObj?.emailAddress === "string"
+        ? emailObj.emailAddress
+        : email;
+
+      console.log("📤 Submitting for:", safeEmail, typeof safeEmail);
+
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ rssUrl, email }),
+        body: JSON.stringify({
+          rssUrl,
+          email: safeEmail,
+        }),
       });
 
       if (!response.ok) {
@@ -115,27 +133,37 @@ export default function Home() {
             )}
           </div>
 
-          <div>
-            <input
-              type="email"
-              placeholder="Enter your email address (required)"
-              value={email}
-              onChange={handleEmailChange}
-              required
-              className={`w-full p-3 rounded-lg shadow-sm transition ${
-                emailError
-                  ? "border-red-500"
-                  : "border-gray-300"
-              }`}
-              style={{ borderWidth: "1px" }}
-            />
-            {emailError && (
-              <p className="text-red-500 text-sm mt-1 text-left">Please enter a valid email address</p>
-            )}
-            <p className="text-sm text-gray-500 mt-1 text-left">
-              Get one free transcript per month. <Link href="/pricing" className="text-primary hover:text-secondary">View plans</Link> for more.
+          {!isSignedIn ? (
+            <div>
+              <input
+                type="email"
+                placeholder="Enter your email address (required)"
+                value={email}
+                onChange={handleEmailChange}
+                required
+                className={`w-full p-3 rounded-lg shadow-sm transition ${
+                  emailError ? "border-red-500" : "border-gray-300"
+                }`}
+                style={{ borderWidth: "1px" }}
+              />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1 text-left">
+                  Please enter a valid email address
+                </p>
+              )}
+              <p className="text-sm text-gray-500 mt-1 text-left">
+                Get one free transcript per month.{" "}
+                <Link href="/pricing" className="text-primary hover:text-secondary">
+                  View plans
+                </Link>{" "}
+                for more.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600 text-left w-full">
+              You're signed in as <strong>{user.primaryEmailAddress.emailAddress}</strong>
             </p>
-          </div>
+          )}
         </div>
 
         <button
@@ -153,6 +181,12 @@ export default function Home() {
         </button>
 
         <p className="text-sm text-gray-400 mt-4">{status}</p>
+
+      {SHOW_DEBUG && (
+        <p className="text-xs text-gray-400 mt-2">
+          Debug: isSignedIn = {isSignedIn ? "✅ yes" : "❌ no"}
+        </p>
+      )}
         {fileUrl && (
           <a
             href={fileUrl}
@@ -174,7 +208,9 @@ export default function Home() {
         </div>
 
         <footer className="mt-10 text-sm text-gray-400">
-          Built in a weekend. Inspired by Pieter Levels.
+          <span>
+            Built <s>in a weekend</s>. Inspired by Pieter Levels.
+          </span>
         </footer>
       </div>
     </main>
